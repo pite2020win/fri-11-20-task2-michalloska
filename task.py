@@ -28,3 +28,13 @@
 #
 #Delete these comments before commit!
 #Good luck.
+
+from Student    import Student 
+from Diary      import Diary
+
+if __name__ == '__main__':
+    student1 = Student("Michal", "Loska")
+    
+    schoolDiary = Diary()
+    schoolDiary.add_student(student1)
+    schoolDiary.add_grade_for_student(student1, 2.0)

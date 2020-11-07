@@ -12,11 +12,12 @@
 # Your project should be able to handle entire school(s?).
 # If you have enough courage and time, try storing (reading/writing)
 # data in text files (YAML, JSON).
-# If you have even more courage, try implementing user interface (might be text-like).
-#
+# If you have even more courage, try implementing user interface
+# (might be text-like).
 # Try to expand your implementation as best as you can.
 # Think of as many features as you can, and try implementing them.
-# Make intelligent use of pythons syntactic sugar (overloading, iterators, generators, etc)
+# Make intelligent use of pythons syntactic sugar
+# (overloading, iterators, generators, etc)
 # Most of all: CREATE GOOD, RELIABLE, READABLE CODE.
 # The goal of this task is for you to SHOW YOUR BEST python programming skills.
 # Impress everyone with your skills, show off with your code.
@@ -34,6 +35,17 @@ from statistics import mean
 import math
 from random import randrange
 
+
+# WARNING!
+# Output in the console looks awful due to enforced use od logging.info which
+# does not allow to suppress new line.
+# I'd highly suggest going back to the previous commit where prints were used
+# and the console output looks much better (thanks to suppressed new line char)
+# > git checkout 1271e0a21b52216e949025b4c95b91bb9c8cbe89
+# or
+# > git reset --hard 1271e0a21b52216e949025b4c95b91bb9c8cbe89
+# I think logging should only be used for actual logging and not for
+# user/program interaction but I used it as it was suggested in the class
 
 def is_school_already_in_dict(_school: str):
     if _school in schoolDB:
@@ -66,7 +78,8 @@ def get_class_in_school(_class: str, _school: str):
         schoolToReturn["class"] = schoolDB[_school][_class]
         return schoolToReturn
     logging.error(
-        "Class %s or school %s does not exist in the data structure!", _class, _school)
+        "Class %s or school %s does not exist in the data structure!",
+        _class, _school)
     quit()
     return None
 
@@ -83,7 +96,8 @@ def add_student_to_class(_student: str, _class):
         _class["class"][0][_student] = {}
 
 
-def does_subject_exist_for_student_in_class(_subject: str, _student: str, _class):
+def does_subject_exist_for_student_in_class(
+        _subject: str, _student: str, _class):
     if _subject in _class[0][_student]:
         logging.warning(
             "Subject %s already exists for Student %s", _subject, _student)
@@ -92,18 +106,21 @@ def does_subject_exist_for_student_in_class(_subject: str, _student: str, _class
 
 
 def add_subject_for_student_in_class(_subject: str, _student: str, _class):
-    if not does_subject_exist_for_student_in_class(_subject, _student, _class["class"]):
+    if not does_subject_exist_for_student_in_class(
+            _subject, _student, _class["class"]):
         _class["class"][0][_student][_subject] = []
 
 
 def add_subject_for_all_students_in_class(_subject: str, _class):
     for student in _class["class"][0]:
-        if not does_subject_exist_for_student_in_class(_subject, student, _class["class"]):
+        if not does_subject_exist_for_student_in_class(
+                _subject, student, _class["class"]):
             _class["class"][0][student][_subject] = []
 
 
 def get_subject_for_student_in_class(_subject: str, _student: str, _class):
-    if does_subject_exist_for_student_in_class(_subject, _student, _class["class"]):
+    if does_subject_exist_for_student_in_class(
+            _subject, _student, _class["class"]):
         subjectToReturn = {}
         subjectToReturn["studentName"] = _student
         subjectToReturn["subjectName"] = _subject
@@ -136,26 +153,26 @@ def get_data_from_JSON(_filePath: str):
 
 def display_whole_class(_class: str):
     logging.info("Displaying class details:")
-    print("School: {}, class: {}".format(
+    logging.info("School: {}, class: {}".format(
         _class["schoolName"], _class["className"]))
     for student in _class["class"][0]:
-        print("{}: ".format(student), end='')
+        logging.info("{}: ".format(student))
         for subject in _class["class"][0][student]:
-            print("{}: {}, ".format(
-                subject, _class["class"][0][student][subject]), end='')
-        print("\n", end='')
-    print("\n", end='')
+            logging.info("{}: {}, ".format(
+                subject, _class["class"][0][student][subject]))
 
 
 def display_statistics_for_class(_class: str):
+    handler = logging.StreamHandler()
+    handler.terminator = ""
     logging.info("Displaying class statistics:")
-    print("School: {}, class: {}".format(
+    logging.info("School: {}, class: {}".format(
         _class["schoolName"], _class["className"]))
 
     avgMarksForSubject = {}
     avgMarksForClass = {}
     for student in _class["class"][0]:
-        print("{}: ".format(student), end='')
+        logging.info("{}: ".format(student))
         avgMarksForSubject[student] = {}
         for subject in _class["class"][0][student]:
             if subject not in avgMarksForClass:
@@ -167,16 +184,14 @@ def display_statistics_for_class(_class: str):
                     _class["class"][0][student][subject])
                 avgMarksForClass[subject].append(
                     avgMarksForSubject[student][subject])
-            print("{}: {}, ".format(
-                subject, avgMarksForSubject[student][subject]), end='')
-        print("\n", end='')
+            logging.info("{}: {}, ".format(
+                subject, avgMarksForSubject[student][subject]))
 
-    print("\nTotal class Average:")
+    logging.info("\nTotal class Average:")
     for subject in avgMarksForClass:
         avgMarksForClass[subject] = round_decimals_up(
             mean(avgMarksForClass[subject]))
-        print("{}: {} \n".format(subject, avgMarksForClass[subject]), end='')
-    print("\n", end='')
+        logging.info("{}: {} \n".format(subject, avgMarksForClass[subject]))
 
 
 def round_decimals_up(number: float, decimals: int = 2):
@@ -191,7 +206,7 @@ def round_decimals_up(number: float, decimals: int = 2):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG, format='')
     schoolDB = {}
 
     add_school("UJ")

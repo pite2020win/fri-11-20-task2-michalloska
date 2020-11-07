@@ -30,8 +30,9 @@
 # Good luck.
 import json
 import logging
-
-# School / Class:
+from statistics import mean
+import math
+from random import randrange
 
 
 def is_school_already_in_dict(_school: str):
@@ -59,24 +60,27 @@ def add_class_for_school(_class: str, _school: str):
 
 def get_class_in_school(_class: str, _school: str):
     if is_class_already_in_school(_class, _school):
-        return schoolDB[_school][_class]
-    logging.warning(
-        "Such class or school does not exist in the data structure!")
+        schoolToReturn = {}
+        schoolToReturn["schoolName"] = _school
+        schoolToReturn["className"] = _class
+        schoolToReturn["class"] = schoolDB[_school][_class]
+        return schoolToReturn
+    logging.error(
+        "Class %s or school %s does not exist in the data structure!", _class, _school)
+    quit()
     return None
-
-# Student / Subject
 
 
 def is_student_in_class(_student: str, _class):
-    if _student in _class[0]:
+    if _student in _class:
         logging.warning("Student %s is already in this class", _student)
         return True
     return False
 
 
 def add_student_to_class(_student: str, _class):
-    if not is_student_in_class(_student, _class):
-        _class[0][_student] = {}
+    if not is_student_in_class(_student, _class["class"]):
+        _class["class"][0][_student] = {}
 
 
 def does_subject_exist_for_student_in_class(_subject: str, _student: str, _class):
@@ -88,60 +92,230 @@ def does_subject_exist_for_student_in_class(_subject: str, _student: str, _class
 
 
 def add_subject_for_student_in_class(_subject: str, _student: str, _class):
-    if not does_subject_exist_for_student_in_class(_subject, _student, _class):
-        _class[0][_student][_subject] = []
+    if not does_subject_exist_for_student_in_class(_subject, _student, _class["class"]):
+        _class["class"][0][_student][_subject] = []
+
+
+def add_subject_for_all_students_in_class(_subject: str, _class):
+    for student in _class["class"][0]:
+        if not does_subject_exist_for_student_in_class(_subject, student, _class["class"]):
+            _class["class"][0][student][_subject] = []
 
 
 def get_subject_for_student_in_class(_subject: str, _student: str, _class):
-    if does_subject_exist_for_student_in_class(_subject, _student, _class):
-        return [_student, _subject, _class[0][_student][_subject]]
+    if does_subject_exist_for_student_in_class(_subject, _student, _class["class"]):
+        subjectToReturn = {}
+        subjectToReturn["studentName"] = _student
+        subjectToReturn["subjectName"] = _subject
+        subjectToReturn["marks"] = _class["class"][0][_student][_subject]
+        return subjectToReturn
 
-def add_marks_for_subject(_subject, *_marksList):
+
+def get_all_subjects_for_student_in_class(_student: str, _class):
+    subjectToReturn = {}
+    subjectToReturn["studentName"] = _student
+    for subject in _class["class"][0][_student]:
+        subjectToReturn[subject] = _class["class"][0][_student][subject]
+    return subjectToReturn
+
+
+def add_marks_for_subject(_subject, _marksList):
     _subject.extend(_marksList)
 
+
+def save_data_to_JSON(_filePath: str):
+    with open(_filePath, 'w') as json_file:
+        json.dump(schoolDB, json_file)
+    logging.info("Sucesfully written data to file")
+
+
+def get_data_from_JSON(_filePath: str):
+    with open(_filePath) as json_file:
+        return json.load(json_file)
+
+
+def display_whole_class(_class: str):
+    logging.info("Displaying class details:")
+    print("School: {}, class: {}".format(
+        _class["schoolName"], _class["className"]))
+    for student in _class["class"][0]:
+        print("{}: ".format(student), end='')
+        for subject in _class["class"][0][student]:
+            print("{}: {}, ".format(
+                subject, _class["class"][0][student][subject]), end='')
+        print("\n", end='')
+    print("\n", end='')
+
+
+def display_statistics_for_class(_class: str):
+    logging.info("Displaying class statistics:")
+    print("School: {}, class: {}".format(
+        _class["schoolName"], _class["className"]))
+
+    avgMarksForSubject = {}
+    avgMarksForClass = {}
+    for student in _class["class"][0]:
+        print("{}: ".format(student), end='')
+        avgMarksForSubject[student] = {}
+        for subject in _class["class"][0][student]:
+            if subject not in avgMarksForClass:
+                avgMarksForClass[subject] = []
+            if (len(_class["class"][0][student][subject]) == 0):
+                avgMarksForSubject[student][subject] = "No Grades"
+            else:
+                avgMarksForSubject[student][subject] = mean(
+                    _class["class"][0][student][subject])
+                avgMarksForClass[subject].append(
+                    avgMarksForSubject[student][subject])
+            print("{}: {}, ".format(
+                subject, avgMarksForSubject[student][subject]), end='')
+        print("\n", end='')
+
+    print("\nTotal class Average:")
+    for subject in avgMarksForClass:
+        avgMarksForClass[subject] = round_decimals_up(
+            mean(avgMarksForClass[subject]))
+        print("{}: {} \n".format(subject, avgMarksForClass[subject]), end='')
+    print("\n", end='')
+
+
+def round_decimals_up(number: float, decimals: int = 2):
+    if not isinstance(decimals, int):
+        raise TypeError("decimal places must be an integer")
+    elif decimals < 0:
+        raise ValueError("decimal places has to be 0 or more")
+    elif decimals == 0:
+        return math.ceil(number)
+    factor = 10 ** decimals
+    return math.ceil(number * factor) / factor
+
+
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     schoolDB = {}
 
+    add_school("UJ")
+    add_class_for_school("year_2", "UJ")
+
     add_school("AGH")
-    add_class_for_school("1year", "AGH")
-    add_class_for_school("1year", "UJ")
-    agh_year1 = get_class_in_school("1year", "AGH")
-    add_student_to_class("Michal Loska", agh_year1)
-    add_subject_for_student_in_class("Physics", "Michal Loska", agh_year1)
-    add_subject_for_student_in_class("Maths", "Michal Loska", agh_year1)
-    
-    loska_physics = get_subject_for_student_in_class(
-        "Physics", "Michal Loska", agh_year1)
-    
-    add_marks_for_subject(loska_physics[2], 2)
-    add_marks_for_subject(loska_physics[2], 4, 5)
-    # print(loska_physics)
-    # schoolDB["AGH"] = {}
+    add_class_for_school("year_1", "AGH")
+    add_class_for_school("year_3", "AGH")
 
-    # schoolDB["AGH"]["1rok"] = [{}]
-    # agh_1rok = schoolDB["AGH"]["1rok"]
-    # agh_1rok[0]["Loska"] = {}
-    # agh_1rok[0]["Loska"]["c++"] = (2,)
-    # agh_1rok[0]["Kolecki"] = {}
-    # agh_1rok[0]["Kolecki"]["python"] = (3,)
-    # # for_school_and_class(agh_1rok)
+    agh_year1 = get_class_in_school("year_1", "AGH")
+    add_student_to_class("Yazmin Whitaker", agh_year1)
+    add_student_to_class("Tasha Hastings", agh_year1)
+    add_student_to_class("Farhan Gallagher", agh_year1)
+    add_student_to_class("Davina Cowan", agh_year1)
+    add_student_to_class("Ruari Fleming", agh_year1)
+    add_student_to_class("Jae Aguirre", agh_year1)
 
-    # # print(agh_1rok)
-    # print(agh_1rok[0])
-    print(schoolDB)
-    # data = None
+    agh_year3 = get_class_in_school("year_3", "AGH")
+    add_student_to_class("Ewan Blackwell", agh_year3)
+    add_student_to_class("Mikaela Oliver", agh_year3)
+    add_student_to_class("Daniele Hardin", agh_year3)
+    add_student_to_class("Kelise Johnston", agh_year3)
+    add_student_to_class("Devante Whitmore", agh_year3)
+    add_student_to_class("Paige Drummond", agh_year3)
 
-    # with open('result.json', 'w') as fp:
-    #     json.dump(schoolDB, fp)
+    uj_year2 = get_class_in_school("year_2", "UJ")
+    add_student_to_class("Umar Houston", uj_year2)
+    add_student_to_class("Raul Clay", uj_year2)
+    add_student_to_class("Barnaby Hensley", uj_year2)
+    add_student_to_class("Maude Wilson", uj_year2)
+    add_student_to_class("Theo Gale", uj_year2)
+    add_student_to_class("Tomasz Thornton", uj_year2)
 
-    # with open('result.json') as json_file:
-    #     data = json.load(json_file)
+    add_subject_for_all_students_in_class("Physics", agh_year1)
+    add_subject_for_all_students_in_class("Python", agh_year3)
+    add_subject_for_all_students_in_class("Literature", uj_year2)
 
-    # print(data)
-    # agh_1rok["loska"]["fizyja"] = 2
-    # schoolDB["AGH"]["1rok"] | LISTA -> | ["LOSKA"]["fizyka"] += (3,)
-    # schoolDB = ["AGH", {}]
-    # print(schoolDB.index(0))
-    # schoolDB = {}
-    # add_school("AGH")
-    # displaySchoolDB()
+    add_subject_for_student_in_class(
+        "Maths", "Barnaby Hensley", uj_year2)
+
+    Umar_Houston_marks = get_all_subjects_for_student_in_class(
+        "Umar Houston", uj_year2)
+    Raul_Clay_marks = get_all_subjects_for_student_in_class(
+        "Raul Clay", uj_year2)
+    Barnaby_Hensley_marks = get_all_subjects_for_student_in_class(
+        "Barnaby Hensley", uj_year2)
+    Maude_Wilson_marks = get_all_subjects_for_student_in_class(
+        "Maude Wilson", uj_year2)
+    Theo_Gale_marks = get_all_subjects_for_student_in_class(
+        "Theo Gale", uj_year2)
+    Tomasz_Thornton_marks = get_all_subjects_for_student_in_class(
+        "Tomasz Thornton", uj_year2)
+
+    Yazmin_Whitaker_marks = get_all_subjects_for_student_in_class(
+        "Yazmin Whitaker", agh_year1)
+    Tasha_Hastings_marks = get_all_subjects_for_student_in_class(
+        "Tasha Hastings", agh_year1)
+    Farhan_Gallagher_marks = get_all_subjects_for_student_in_class(
+        "Farhan Gallagher", agh_year1)
+    Davina_Cowan_marks = get_all_subjects_for_student_in_class(
+        "Davina Cowan", agh_year1)
+    Ruari_Fleming_marks = get_all_subjects_for_student_in_class(
+        "Ruari Fleming", agh_year1)
+    Jae_Aguirre_marks = get_all_subjects_for_student_in_class(
+        "Jae Aguirre", agh_year1)
+
+    Ewan_Blackwell_marks = get_all_subjects_for_student_in_class(
+        "Ewan Blackwell", agh_year3)
+    Mikaela_Oliver_marks = get_all_subjects_for_student_in_class(
+        "Mikaela Oliver", agh_year3)
+    Daniele_Hardin_marks = get_all_subjects_for_student_in_class(
+        "Daniele Hardin", agh_year3)
+    Kelise_Johnston_marks = get_all_subjects_for_student_in_class(
+        "Kelise Johnston", agh_year3)
+    Devante_Whitmore_marks = get_all_subjects_for_student_in_class(
+        "Devante Whitmore", agh_year3)
+    Paige_Drummond_marks = get_all_subjects_for_student_in_class(
+        "Paige Drummond", agh_year3)
+
+    # year_2 UJ
+    add_marks_for_subject(Umar_Houston_marks["Literature"], [2, 2, 1, 3])
+    add_marks_for_subject(Raul_Clay_marks["Literature"], [4, 5, 3, 2, 1])
+    add_marks_for_subject(Barnaby_Hensley_marks["Literature"], [4, 1, 1, 2, 3])
+    add_marks_for_subject(Maude_Wilson_marks["Literature"], [1, 3, 4, 5, 2])
+    add_marks_for_subject(Theo_Gale_marks["Literature"], [3, 4, 5, 2, 2])
+    add_marks_for_subject(Tomasz_Thornton_marks["Literature"], [2, 5, 4, 1, 3])
+
+    add_marks_for_subject(Barnaby_Hensley_marks["Maths"], [4, 2, 3, 1, 5])
+
+    # year_1 AGH
+    add_marks_for_subject(Yazmin_Whitaker_marks["Physics"], [
+                          randrange(1, 5) for i in range(0, 5)])
+    add_marks_for_subject(Tasha_Hastings_marks["Physics"], [
+                          randrange(1, 5) for i in range(0, 5)])
+    add_marks_for_subject(Farhan_Gallagher_marks["Physics"], [
+                          randrange(1, 5) for i in range(0, 5)])
+    add_marks_for_subject(Davina_Cowan_marks["Physics"], [
+                          randrange(1, 5) for i in range(0, 5)])
+    add_marks_for_subject(Ruari_Fleming_marks["Physics"], [
+                          randrange(1, 5) for i in range(0, 5)])
+    add_marks_for_subject(Jae_Aguirre_marks["Physics"], [
+                          randrange(1, 5) for i in range(0, 5)])
+
+    # year_3 AGH
+    add_marks_for_subject(Ewan_Blackwell_marks["Python"], [
+                          randrange(1, 5) for i in range(0, 5)])
+    add_marks_for_subject(Mikaela_Oliver_marks["Python"], [
+                          randrange(1, 5) for i in range(0, 5)])
+    add_marks_for_subject(Daniele_Hardin_marks["Python"], [
+                          randrange(1, 5) for i in range(0, 5)])
+    add_marks_for_subject(Kelise_Johnston_marks["Python"], [
+                          randrange(1, 5) for i in range(0, 5)])
+    add_marks_for_subject(Devante_Whitmore_marks["Python"], [
+                          randrange(1, 5) for i in range(0, 5)])
+    add_marks_for_subject(Paige_Drummond_marks["Python"], [
+                          randrange(1, 5) for i in range(0, 5)])
+
+    display_whole_class(agh_year1)
+    display_statistics_for_class(agh_year1)
+    display_whole_class(agh_year3)
+    display_statistics_for_class(agh_year3)
+    display_whole_class(uj_year2)
+    display_statistics_for_class(uj_year2)
+
+    save_data_to_JSON('result.json')
+
+    schoolDB_2 = get_data_from_JSON('result.json')
